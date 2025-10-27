@@ -33,7 +33,7 @@ This folder contains the R scripts used to analyze the log files and generate th
 - **`R_figures/`** — Four Quarto files (`.qmd`) that generate all manuscript figures.  
   There is one Quarto file per dataset and one that reproduces the figures on gradient evaluation time comparison. 
   In the first code chunk the Quarto files *automatically* load all other scripts in the `R_code` folder and its subfolders, provided the folder hierarchy is maintained.
-  The first section named `Preliminaries` contains two code chunks: one to set the file names and the dummy variable `save_plots` (if `TRUE`, the figures will be saved to the output folder), and one that loads the required fonts (if getting an error here you can check the file `/code/R_code/R_functions/loadFonts.R`.
+  The first section named **Preliminaries** contains two code chunks: one to set the file names and the dummy variable **save_plots** (if TRUE, the figures will be saved to the output folder), and one that loads the required fonts (if getting an error here, check the file `/code/R_code/R_functions/loadFonts.R`).
 
 - **`path.R`** — Defines the working directories. The paths are not computer-specific, so they should not be changed unless a different (within project) folder hierarchy is desired.
 - **`libraries.R`** — Loads all required R packages.
