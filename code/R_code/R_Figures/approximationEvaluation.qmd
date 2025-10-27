@@ -1,0 +1,205 @@
+---
+title: "approximationEvaluation"
+format: pdf
+---
+```{r, setup, include=FALSE}
+# Stable, zero-edit setup for any machine
+set.seed(666)
+options(stringsAsFactors = FALSE)
+Sys.setlocale("LC_TIME", "C")
+
+# Load small helpers without hard-coded paths
+stopifnot(requireNamespace("fs", quietly = TRUE))
+stopifnot(requireNamespace("rprojroot", quietly = TRUE))
+
+# Resolve repo root and code dir; source libraries and paths
+root <- rprojroot::find_root(
+  rprojroot::has_file(".git") |
+    rprojroot::has_file("_quarto.yml") |
+    rprojroot::has_dir("code")
+)
+
+# Prefer R_code/, else code/R_code/
+R_path <- fs::path(root, "code", "R_code")
+sapply(fs::path(R_path, c("R_libraries.R", "R_paths.R")), source)
+r_files <- list.files(path = R_functions_path, pattern = "\\.R$", full.names = TRUE, recursive = TRUE)
+r_files <- append(r_files, list.files(path = R_classes_path, pattern = "\\.R$", full.names = TRUE))
+for (r_file in r_files) source(r_file)
+```
+
+# Preliminaries
+```{r}
+# library(showtext)
+# library(sysfonts)
+# library(ggplot2)
+# library(ggplot2)
+# library(dplyr)
+```
+### Parameters
+```{r}
+save_plots <- FALSE
+```
+
+### Fonts Uploading
+```{r, include=FALSE}
+fontSize <- 10
+fontSizeSmall <- 8
+fontType <- "CMU Serif"
+loadCmuFonts
+# showtext_auto()
+```
+ 
+```{r}
+# font_add(family = "CMU Serif", regular = "~/Library/Fonts/cmunrm.otf", italic = "~/Library/Fonts/cmunti.otf", bold = "~/Library/Fonts/cmunbx.otf", bolditalic = "~/Library/Fonts/cmunbi.otf" ) 
+# font_add("lmmath", "/Library/TeX/Root/texmf-dist/fonts/opentype/public/lm-math/latinmodern-math.otf")
+```
+
+# Generating Rates
+Here we generate the log rates
+```{r}
+nStates <- 8
+generateRatesApproxEval <- function(nStates, predictorName = "L1") {
+  log(computeRatesAlph(nStates, "L1") + 10) |> cat()
+}
+generateRatesApproxEval(nStates, "L1")
+```
+# Uploading Estimated Times per Iterations (Approximate vs Numerical)
+```{r}
+timePerIterationApprox <- c(2275, 4672,  3860, 6528, 17640, 67629) / 1000
+timePerIterationNumerical <- c(2207, 30538, 673067, 22639378, 909911417, 45000000000) / 1000
+states <- c(4, 8, 16, 32, 64, 128)
+n <- length(timePerIterationApprox)
+dataAverageTime <- data.frame(
+  states = rep(states, 2),
+  timePerIteration = c(timePerIterationApprox, timePerIterationNumerical),
+  method = factor(rep(c("Approximation", "Numerical"), each = n))
+)
+```
+
+Notice that the outcome values are in milliseconds (ms).
+
+```{r}
+# Fit scaling exponents
+fits <- dataAverageTime %>%
+  group_by(method) %>%
+  do({
+    m <- lm(log(timePerIteration) ~ log(states), data = .)
+    data.frame(
+      p = coef(m)[2],
+      alpha = coef(m)[1]
+    )
+  })
+
+fits
+
+# Reference lines anchored at the *last* n for each of the two methods
+refs <- dataAverageTime %>%
+  group_by(method) %>%
+  summarize(n0 = last(states), t0 = last(timePerIteration), .groups="drop") %>%
+  mutate(p_ref = ifelse(method=="Approximation", 2, 5)) %>%
+  inner_join(data.frame(states=states), by=character()) %>%
+  group_by(method) %>%
+  mutate(ref_time = t0 * (states / n0) ^ p_ref)
+```
+
+# Generator Approx vs Numerical Computation Time Figures
+```{r}
+dataAverageTime <- dataAverageTime |> mutate(silentVar = factor(rep("A", nrow(dataAverageTime))))
+
+gradEvalPlot <- ggplot(dataAverageTime, aes(x = states, y = timePerIteration,
+                            color = method, shape = method)) +
+  geom_line(aes(linetype = silentVar), 
+    color = "grey40", linewidth = 0.4, alpha = 0
+  ) +
+ # Reference lines
+  geom_line(
+    data = refs,
+    aes(y = ref_time),
+    color = "grey40", linewidth = 0.4, alpha = 0.7, linetype = "dotted"
+  ) +
+  geom_point(size = 0.5) +
+  geom_line(size = 0.3) +
+# Add text annotations next to the reference lines
+  annotate("text", x = 11, y = 0.3, label = "n=2", 
+           parse = FALSE, color = "black",
+           family = fontType, fontface = "italic",
+           size = 2.3, hjust = 0) +
+  annotate("text", x = 11, y = 2000, label = "n=5", 
+           fontface = "italic",
+           parse = FALSE, color = "black",
+           size = 2.3, family = fontType, hjust = 0) +
+  annotate("text", x = 11, y = 2000, label = "n=5", 
+           fontface = "italic",
+           parse = FALSE, color = "black",
+           size = 2.3, family = fontType, hjust = 0) +
+scale_x_log10(
+    breaks = states,
+    labels = as.character
+  ) +
+  scale_y_log10(
+    labels = scales::trans_format("log10", scales::math_format(10^.x)), 
+    breaks = c(1, 100, 10000, 1000000)
+  ) +
+  scale_color_manual(
+    values = c("Approximation" = "#d62728", "Numerical" = "#1f77b4"),
+    labels = c("Approximation", "Numerical")
+  ) +
+  scale_linetype_manual(
+    name = "Reference",
+    values = c("A" = "dotted"),
+    labels = c("A"  = expression(italic("  (K"^n*")")))
+                 # expression(paste("\mathcal{O}")))
+  ) +
+  scale_shape_manual(values = c("Approximation" = 16, "Numerical" = 17)) +
+  labs(
+    x = "Number of states", y = "Time (ms)",
+    color = "Method", shape = "Method", linetype = "Reference"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = c(0.05, 0.95),
+    legend.justification = c("left", "top"),
+    legend.background = element_blank(),
+    legend.box.background = element_blank(),
+    legend.box = "vertical",
+    legend.spacing.x = unit(0.2, "cm"), 
+    legend.spacing.y = unit(-0.3, "cm"),
+    legend.key.height = unit(0.3, "cm"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = fontSizeSmall, family = fontType, color = "black"),
+    panel.grid.major = element_line(color = "grey90", linetype = "33", size = 0.3),
+    panel.grid.minor = element_blank(),
+    axis.ticks.x = element_line(size = 0.3),
+    axis.ticks.y = element_line(size = 0.3),
+    axis.line = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA, size = 0.3),
+    # text = element_text(size = fontSize, family = fontType, color = "black"),
+    axis.text = element_text(size = fontSizeSmall, family = fontType, color = "black"),
+    axis.title = element_text(size = fontSize, family = fontType, color = "black")
+  ) +
+  guides(
+    linetype = guide_legend(order = 2, override.aes = list(alpha=1)),
+    color = guide_legend(order = 1, override.aes = list(shape = c(16, 17))),
+    shape = "none"
+  ) 
+```
+
+```{r}
+finalGradEvalPlot <- gradEvalPlot +
+  annotate("text", x = 7.5, y = 450000, label = "𝒪",
+           parse = FALSE, color = "black",
+           fontface = "italic",
+           size = 3.3, family = "lmmath", hjust = 0)
+g_record(finalGradEvalPlot, width = 3, height = 2.5)
+```
+
+```{r}
+if (save_plots) ggsave(file.path(output_figures_path, "gradEvalPlot.pdf"), plot = finalGradEvalPlot, width = 3, height = 2.5)
+```
+
+
+
+
+
+
+

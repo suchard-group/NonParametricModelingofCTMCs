@@ -1,0 +1,204 @@
+---
+title: "Simulations Figures"
+author: "Filippo Monti"
+date: "`r format(Sys.Date(), '%Y-%m-%d')`"
+output:
+  pdf_document:
+    keep_tex: true
+    latex_engine: pdflatex
+    toc: yes
+    highlight: tango
+    df_print: kable
+fontsize: 11pt
+geometry: margin=1.2in
+editor_options:
+  markdown:
+    wrap: 72
+header-includes:
+  - \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+  - \usepackage{bm}
+---
+::: hidden $$ \renewcommand{\bm}[1]{\boldsymbol{#1}} $$ :::
+
+```{r, setup, include=FALSE}
+# Stable, zero-edit setup for any machine
+set.seed(666)
+options(stringsAsFactors = FALSE)
+Sys.setlocale("LC_TIME", "C")
+
+# Load small helpers without hard-coded paths
+stopifnot(requireNamespace("fs", quietly = TRUE))
+stopifnot(requireNamespace("rprojroot", quietly = TRUE))
+
+# Resolve repo root and code dir; source libraries and paths
+root <- rprojroot::find_root(
+  rprojroot::has_file(".git") |
+    rprojroot::has_file("_quarto.yml") |
+    rprojroot::has_dir("code")
+)
+
+# Prefer R_code/, else code/R_code/
+R_path <- fs::path(root, "code", "R_code")
+sapply(file.path(R_path, c("R_libraries.R", "R_paths.R")), source)
+r_files <- list.files(path = R_functions_path, pattern = "\\.R$", full.names = TRUE, recursive = TRUE)
+r_files <- append(r_files, list.files(path = R_classes_path, pattern = "\\.R$", full.names = TRUE))
+for (r_file in r_files) source(r_file)
+```
+# Preliminaries
+### Fonts Upload
+```{r, fonts, include=FALSE}
+loadCmuSerif
+```
+
+```{r}
+# sysfonts::font_add("CMU Serif", regular = "/Users/filippomonti/Library/Fonts/cmunrm.otf")
+# showtext_auto()   # automatically enables showtext for all devices
+```
+### Parameters
+```{r}
+xmlNameGp <- "simulation_GP" #nprSimulationHostDistanceConvex2
+xmlNameGlm <- "simulation_LL" #nprSimulationGlmHostDistanceConvex2
+```
+
+```{bash}
+#cp /Users/filippomonti/Desktop/AdditiveGaussianProcesses/output/log/nprSimulationGlmHostDistanceConvex2.log /Users/filippomonti/Desktop/npCTMC/output/nprSimulGp.log
+#cd /Users/filippomonti/Desktop/try_download/nprSimulationHostDistanceConvex2/Gp_E_HostDistance_HMC_1_1_1_1
+#cp nprSimulationHostDistanceConvex2.log /Users/filippomonti/Desktop/npCTMC/output/simulation_GP.log
+``` 
+
+# Simulation Models
+```{r}
+simulation = "on"
+jobsAttributes <- list("mana" = "Gp", "predictorName" = c("HostDistance"))
+additionalAttributes <- list("msim" = "lrm", "nstates" = as.vector(17)) 
+additionalAttributes <- append(additionalAttributes, list("tree" = "rabies", 
+                        "dataType" = "Alph", "align_length" = 0, 
+                        "shape" = "Convex"))
+```
+
+### Log Linear
+```{r}
+path_to_log <- file.path(input_path, paste0(xmlNameGlm, ".log"))
+jobsAttributes$mana <- "Glm"
+for (r_file in r_files) source(r_file)
+PJL <- AnalyserFromLog$new(project = "NPRates", path = path_to_log,
+                          jobsAttributes = jobsAttributes, additionalAttributes = additionalAttributes,
+                          burnIn = 0.5, thinning = 1, burnOut = 1,
+                          plottingFlags = list(plottingLogRates = TRUE),#, plottingRatesLogRates=TRUE),
+                          actions = list(normalize=FALSE, exponentiate = FALSE, simulation = "on",
+                                         publicationQuality = TRUE, addClockRate = FALSE))
+
+# mcmcEval <- PJL$mcmc(1)
+ll_hostModel <- PJL$getData(1) |> dplyr::select(starts_with("host.model"))
+# p <- PJL$plotter()
+# print(mcmcEval$ESSSorted())
+summ_data_LL <- createPlottingDataLogRates(PJL$getDataToPlot(), addPredictor = TRUE, addTrueline = TRUE)
+```
+
+### Gaussian Process
+```{r}
+jobsAttributes$mana <- "Gp"
+path_to_log <- file.path(input_path, paste0(xmlNameGp, ".log"))
+
+# PJL <- AnalyserJobsList$new(project = "NPRates", path = path_to_xml,
+#                           # attributes = attributes,
+#                           jobsAttributes = jobsAttributes, additionalAttributes = additionalAttributes,
+#                           burnIn = 0.5, thinning = 1, burnOut = 1,
+#                           plottingFlags = list(plottingLogRates = TRUE, plottingRatesLogRates=TRUE,
+#                                                plottingDerivatives = FALSE),
+#                           actions = list(normalize=TRUE,  useInput = FALSE,
+#                                          simulation = simulation, publicationQuality = TRUE, 
+#                                          centerData = FALSE, addClockRate = FALSE))
+path_to_xml <- file.path(input_path, xmlNameGp)
+PJL <- AnalyserFromLog$new(project = "NPRates", path = path_to_log,
+                          jobsAttributes = jobsAttributes, additionalAttributes = additionalAttributes,
+                          burnIn = 0.5, thinning = 1, burnOut = 1,
+                          plottingFlags = list(plottingLogRates = TRUE),#, plottingRatesLogRates=TRUE),
+                          actions = list(normalize=FALSE, exponentiate = FALSE, simulation = "on",
+                                         publicationQuality = TRUE, addClockRate = FALSE))
+
+# mcmcEval <- PJL$mcmc(1)
+gp_hostModel <- PJL$getData(1) |> dplyr::select(starts_with("host.model")) 
+# hyper_cols <- c(grep("hyper", colnames(mcmcEval$data), value = TRUE), "clock.rate")
+# summary(mcmcEval$data[, hyper_cols])
+# mcmcEval$ESSSorted()
+summ_data_GP <- createPlottingDataLogRates(PJL$getDataToPlot(), addPredictor = TRUE, addTrueline = FALSE)
+# p <- PJL$plotter()
+# p$logRatesQuantiles
+```
+
+# Simulation Plot
+```{r}
+linesize = 0.5
+library(mgcv)
+summ_data_GP <- summ_data_GP %>%
+ mutate(
+   lowHPD = predict(gam(q05 ~ s(predictor, bs = "cs")), newdata = summ_data_GP),
+   highHPD = predict(gam(q95 ~ s(predictor, bs = "cs")), newdata = summ_data_GP)
+ )
+myplot <- ggplot(summ_data_LL, aes(x = predictor)) +
+  geom_ribbon(data = summ_data_GP, aes(ymin = lowHPD, ymax = highHPD), alpha = 0.5, fill = "darkgoldenrod1") +
+  geom_line(data = summ_data_GP, aes(y = median, color = "c", linetype = "c"), size = linesize) +
+  
+  geom_ribbon(aes(ymin = q05, ymax = q95), alpha = 0.5, fill = "#94CBEc") +
+  geom_line(aes(y = median, color = "b", linetype = "b"), size = linesize) +
+  
+  geom_line(aes(y = trueLine, color = "a", linetype = "a"), size = linesize, alpha=0.8) +
+  
+  labs(x = "Host genetic distance", y = "Log rates") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  scale_color_manual(
+     name = "Legend",
+     values = c("a" = "#337538", "b" = "#2F67B1", "c" = "#F8766D"), 
+     labels = c("Truth", "LL", "GP")
+   ) +
+   scale_linetype_manual(
+     name = "Legend",
+     values = c("a" = "dashed", "b" = "solid", "c" = "solid"), 
+     labels = c("Truth", "LL", "GP"), 
+     guide = guide_legend(
+      override.aes = list(linetype = c("22228222", "solid", "solid")))
+   ) 
+  
+
+final_plot <- publicationQualitySettings(myplot) + theme(legend.position = c(1, 0.865), legend.justification = c(1, 1)) 
+final_plot
+
+gg_record(device = "pdf", width = 3, height = 2.5, units = "in", dpi = 300)   
+print(final_plot)
+gg_stop_recording()
+```
+
+```{r}
+if (save_plots) {
+  ggsave(
+    filename = paste0(outpul_figures_path, "simulationLogRates", ".pdf"),
+    plot = final_plot,
+    width = 3, height = 2.5, dpi = 300
+  )
+}
+```
+
+# Computing RMSE
+```{r}
+# ---- Inputs ----
+true <- as.numeric(summ_data_LL$trueLine)
+
+rmse_from_draws <- function(M, true) {
+  # M: draws x grid; returns vector of RMSE across draws
+  rmse <- apply(M, 1, function(x) sqrt(mean((x - true)^2)))
+  cat("RMSE\n")
+  cat("Median = ", median(rmse), "\n")
+  cat("Mean   = ", mean(rmse), "\n")
+  cat("HPDI 95% = (", quantile(rmse, c(0.025, 0.975)), ")\n")
+}
+
+# Compute RMSE samples (you already have these, but here for completeness)
+cat("GP Model:\n")
+rmse_from_draws(gp_hostModel, true)
+cat("\nLL Model:\n")
+rmse_from_draws(ll_hostModel, true)
+```
+
+
