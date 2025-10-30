@@ -16,7 +16,6 @@ stopifnot(requireNamespace("rprojroot", quietly = TRUE))
 # Resolve repo root and code dir; source libraries and paths
 root <- rprojroot::find_root(
   rprojroot::has_file(".git") |
-    rprojroot::has_file("_quarto.yml") |
     rprojroot::has_dir("code")
 )
 
@@ -71,7 +70,7 @@ bat_species_info <- list(
   Ln  = list(letter = "I",  color = "#9F4A96"),
   Nh = list(letter = "J", color = "#C26A77"),
   
-  Lb  = list(letter = "K", color = "#FDB338"),  # TODO: check Canada #2E2585  
+  Lb  = list(letter = "K", color = "#FDB338"),
   Lbl = list(letter = "L",  color = "#FF6347"),   #9F4A96.  #F46D43
   Lc  = list(letter = "M", color = "#ff0000"),
   Li = list(letter = "N", color = "#ff7400"),

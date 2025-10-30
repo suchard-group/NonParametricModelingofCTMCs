@@ -33,7 +33,6 @@ stopifnot(requireNamespace("rprojroot", quietly = TRUE))
 # Resolve repo root and code dir; source libraries and paths
 root <- rprojroot::find_root(
   rprojroot::has_file(".git") |
-    rprojroot::has_file("_quarto.yml") |
     rprojroot::has_dir("code")
 )
 
@@ -173,7 +172,7 @@ gg_stop_recording()
 ```{r}
 if (save_plots) {
   ggsave(
-    filename = paste0(outpul_figures_path, "simulationLogRates", ".pdf"),
+    filename = paste0(output_figures_path, "simulationLogRates", ".pdf"),
     plot = final_plot,
     width = 3, height = 2.5, dpi = 300
   )
