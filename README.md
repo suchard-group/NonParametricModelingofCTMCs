@@ -6,7 +6,7 @@
 
 This repository contains the scripts and XML files required to reproduce the analyses presented in the paper  
 **“NonParametric Modeling of Continuous-Time Markov Chains”**  
-by *Filippo Monti*, *Xiang Li*, *Marc A. Suchard*.
+by *Filippo Monti*, *Xiang Ji*, *Marc A. Suchard*.
 
 ---
 
@@ -246,7 +246,7 @@ If you use this repository, please cite:
 ## 🧠 Authors
 
 - **Filippo Monti** — UCLA  
-- **Xiang Li** — Tulane University
+- **Xiang Ji** — Tulane University
 - **Marc A. Suchard** — UCLA
 
 ---
