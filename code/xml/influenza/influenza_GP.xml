@@ -28801,7 +28801,7 @@
 		</populationSize>
 	</constantSize>
 
-    <empiricalTreeDistributionModel id="treeModel" fileName="subset1.trees">
+    <empiricalTreeDistributionModel id="treeModel" fileName="influenza_empirical_trees.trees">
         <taxa idref="subset1"/>
     </empiricalTreeDistributionModel>
 	<statistic id="treeModel.currentTree" name="Current Tree">
