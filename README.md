@@ -167,14 +167,14 @@ Generate log files for the **log-linear** and **Gaussian process** models.
     java -Djava.library.path=/usr/local/lib \
       -jar /path/to/beast-mcmc/build/dist/beast.jar \
       -seed 666 -overwrite \
-      ../xmls/simulation_LL.xml
+      ../code/xml/simulation_LL.xml
 
 **Gaussian Process Model**
 
     java -Djava.library.path=/usr/local/lib \
       -jar /path/to/beast-mcmc/build/dist/beast.jar \
       -seed 666 -overwrite \
-      ../xmls/simulation_GP.xml
+      ../code/xml/simulation_GP.xml
 
 ---
 
@@ -185,14 +185,14 @@ Generate log files for the **log-linear** and **Gaussian process** models.
     java -Djava.library.path=/usr/local/lib \
       -jar /path/to/beast-mcmc/build/dist/beast.jar \
       -seed 666 -overwrite \
-      ../xmls/rabies_LL.xml
+      ../code/xml/rabies_LL.xml
 
 **Gaussian Process Model**
 
     java -Djava.library.path=/usr/local/lib \
       -jar /path/to/beast-mcmc/build/dist/beast.jar \
       -seed 666 -overwrite \
-      ../xmls/rabies_GP.xml
+      ../code/xml/rabies_GP.xml
 
 ---
 
@@ -203,7 +203,7 @@ This analysis requires a set of **empirical trees** `code/xml/influenza_empirica
 [//]: # (Extract them into the `xml` folder using:)
 
 [//]: # ()
-[//]: # (    tar -xzf ../xmls/airCommunitiesMM_500.trees.tar.gz -C ../xmls/)
+[//]: # (    tar -xzf ../code/xml/airCommunitiesMM_500.trees.tar.gz -C ../code/xml/)
 
 [//]: # (Then run:)
 
@@ -212,18 +212,18 @@ This analysis requires a set of **empirical trees** `code/xml/influenza_empirica
     java -Djava.library.path=/usr/local/lib \
       -jar /path/to/beast-mcmc/build/dist/beast.jar \
       -seed 666 -overwrite \
-      ../xmls/influenza_LL.xml
+      ../code/xml/influenza_LL.xml
 
 **Gaussian Process Model**
 
     java -Djava.library.path=/usr/local/lib \
       -jar /path/to/beast-mcmc/build/dist/beast.jar \
       -seed 666 -overwrite \
-      ../xmls/influenza_GP.xml
+      ../code/xml/influenza_GP.xml
 
 ---
 
-### 🌍 Generating MCC trees 
+### 🌲 Generating MCC trees 
 To generate MCC trees with **TreeAnnotator** (included with BEAST) use:
 
     treeannotator -heights mean \
